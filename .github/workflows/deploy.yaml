@@ -10,11 +10,11 @@ on:
       org_name:
         description: 'Nombre de la organización en IBM API Connect'
         required: true
-        default: 'Sandbox'
+        default: 'test-0'
       catalog_name:
         description: 'Nombre del catálogo destino (sandbox/test/prod)'
         required: true
-        default: 'Sandbox'
+        default: 'sandbox'
  
 jobs:
   deploy:
