@@ -37,7 +37,7 @@ jobs:
           provider-org: ${{ github.event.inputs.org_name }}
           catalog: ${{ github.event.inputs.catalog_name }}
           apikey: ${{ env.APIC_APIKEY }}
-          product-file: ${{ github.event.inputs.product_file }}
+          product-file: '0-dev/products/product.yaml'
           migrate_subscriptions: 'true'
  
 
