@@ -6,7 +6,7 @@ on:
       product_file:
         description: 'Ruta del archivo del producto (ej: product.yaml)'
         required: true
-        default: '0-dev/apis/api-example.yaml'
+        default: '0-dev/products/product.yaml'
       org_name:
         description: 'Nombre de la organización en IBM API Connect'
         required: true
@@ -37,27 +37,6 @@ jobs:
           provider-org: ${{ github.event.inputs.org_name }}
           catalog: ${{ github.event.inputs.catalog_name }}
           apikey: ${{ env.APIC_APIKEY }}
-          product-file: '0-dev/products/product.yaml'
+          product-file: ${{ github.event.inputs.product_file }}
           migrate_subscriptions: 'true'
  
-
-      - name: Test API in Selected Catalog
-        if: success()
-        shell: python
-        run: |
-          import requests, sys
-          webhook_url = 'https://hub.us-east-a.apiconnect.automation.ibm.com/apitest/api/rest/v1/b489c5cb-5787-4910-ba55-0feb4b83acd15%27
-          headers = {
-            "X-API-Key": "${{ secrets.API_TEST_KEY }}",
-            "X-API-Secret": "${{ secrets.API_TEST_SECRET }}",
-            "Content-Type": "application/json"
-          }
-          body = '{"options": { "allAssertions": true,"JUnitFormat": false}}'
-          r = requests.post(f"{webhook_url}/tests/run", headers=headers, data=body)
-          results = r.json()
-          return_code = 0
-          for result in results:
-              print(f"Test: {result['testName']}\tResult: {result['status']}")
-              if result['status'] != 'passed':
-                  return_code += 1
-          sys.exit(return_code)
