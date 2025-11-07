@@ -13,7 +13,6 @@ plans:
         value: 100/1hour
     apis:
       order2.0.0: {}
-      stock1.0.0: {}
 apis:
   order2.0.0:
     $ref: ../apis/orders_api.yaml
