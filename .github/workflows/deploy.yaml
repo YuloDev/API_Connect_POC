@@ -26,9 +26,8 @@ jobs:
  
       - name: Install IBM API Connect CLI
         run: |
-          echo "⬇️ Instalando IBM API Connect CLI..."
-          curl -fsSL https://github.com/IBM/apiconnect-cli/releases/latest/download/apic-linux.tgz -o apic.tgz
-          tar -xzf apic.tgz
+          echo "⬇️ Instalando IBM API Connect CLI desde paquete local"
+          tar -xzf ./tools/apic-linux.tgz
           sudo mv apic /usr/local/bin/
           apic --version
  
