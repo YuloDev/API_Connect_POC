@@ -3,64 +3,61 @@ name: Deploy API to IBM API Connect
 on:
   workflow_dispatch:
     inputs:
-      api_path:
-        description: 'Ruta del archivo de API (por ejemplo: apis/my-api.yaml)'
+      product_file:
+        description: 'Ruta del archivo del producto (ej: product.yaml)'
         required: true
-        default: 'apis/my-api.yaml'
+        default: '0-dev/apis/api-example.yaml'
       org_name:
         description: 'Nombre de la organización en IBM API Connect'
         required: true
-        default: 'default-org'
+        default: 'Sandbox Test Organization'
       catalog_name:
         description: 'Nombre del catálogo destino (sandbox/test/prod)'
         required: true
-        default: 'sandbox'
+        default: 'Sandbox'
  
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    name: Deploy API Product
+ 
+    env:
+      APIC_SERVER: ${{ secrets.APIC_SERVER }}
+      APIC_APIKEY: ${{ secrets.APIC_APIKEY }}
  
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
  
-      - name: Install IBM API Connect CLI
+      - name: Deploy API Product
+        uses: ibm-apiconnect/actions@main
+        with:
+          manager-host: ${{ env.APIC_SERVER }}
+          api-host: ${{ env.APIC_SERVER }}
+          provider-org: ${{ github.event.inputs.org_name }}
+          catalog: ${{ github.event.inputs.catalog_name }}
+          apikey: ${{ env.APIC_APIKEY }}
+          product-file: ${{ github.event.inputs.product_file }}
+          migrate_subscriptions: 'true'
+ 
+
+      - name: Test API in Selected Catalog
+        if: success()
+        shell: python
         run: |
-          echo "⬇️ Instalando IBM API Connect CLI..."
-          curl -fsSL https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/integration/apiconnect/tools/apic-linux.tgz -o apic.tgz
-          tar -xzf apic.tgz
-          sudo mv apic /usr/local/bin/
-          apic --version
- 
-      - name: Login to IBM API Connect
-        env:
-          APIC_SERVER: ${{ secrets.APIC_SERVER }}
-          APIC_USER: ${{ secrets.APIC_USER }}
-          APIC_PASS: ${{ secrets.APIC_PASS }}
-          APIC_REALM: ${{ secrets.APIC_REALM }}
-        run: |
-          echo "🔐 Autenticando en IBM API Connect..."
-          apic login \
-            --server "$APIC_SERVER" \
-            --username "$APIC_USER" \
-            --password "$APIC_PASS" \
-            --realm "$APIC_REALM" \
-            --accept-license
- 
-      - name: Validate and Publish API
-        env:
-          APIC_SERVER: ${{ secrets.APIC_SERVER }}
-          API_PATH: ${{ github.event.inputs.api_path }}
-          ORG_NAME: ${{ github.event.inputs.org_name }}
-          CATALOG_NAME: ${{ github.event.inputs.catalog_name }}
-        run: |
-          echo "📘 Validando API: $API_PATH"
-          apic validate "$API_PATH"
- 
-          echo "🚀 Publicando API en $CATALOG_NAME / $ORG_NAME"
-          apic publish "$API_PATH" \
-            --server "$APIC_SERVER" \
-            --org "$ORG_NAME" \
-            --catalog "$CATALOG_NAME"
- 
-          echo "✅ API publicada exitosamente."
+          import requests, sys
+          webhook_url = 'https://hub.us-east-a.apiconnect.automation.ibm.com/apitest/api/rest/v1/b489c5cb-5787-4910-ba55-0feb4b83acd15%27
+          headers = {
+            "X-API-Key": "${{ secrets.API_TEST_KEY }}",
+            "X-API-Secret": "${{ secrets.API_TEST_SECRET }}",
+            "Content-Type": "application/json"
+          }
+          body = '{"options": { "allAssertions": true,"JUnitFormat": false}}'
+          r = requests.post(f"{webhook_url}/tests/run", headers=headers, data=body)
+          results = r.json()
+          return_code = 0
+          for result in results:
+              print(f"Test: {result['testName']}\tResult: {result['status']}")
+              if result['status'] != 'passed':
+                  return_code += 1
+          sys.exit(return_code)
