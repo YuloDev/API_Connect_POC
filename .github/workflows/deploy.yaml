@@ -1,0 +1,66 @@
+name: Deploy API to IBM API Connect
+ 
+on:
+  workflow_dispatch:
+    inputs:
+      api_path:
+        description: 'Ruta del archivo de API (por ejemplo: apis/my-api.yaml)'
+        required: true
+        default: 'apis/my-api.yaml'
+      org_name:
+        description: 'Nombre de la organización en IBM API Connect'
+        required: true
+        default: 'default-org'
+      catalog_name:
+        description: 'Nombre del catálogo destino (sandbox/test/prod)'
+        required: true
+        default: 'sandbox'
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      - name: Install IBM API Connect CLI
+        run: |
+          echo "⬇️ Instalando IBM API Connect CLI..."
+          curl -fsSL https://github.com/IBM/apiconnect-cli/releases/latest/download/apic-linux.tgz -o apic.tgz
+          tar -xzf apic.tgz
+          sudo mv apic /usr/local/bin/
+          apic --version
+ 
+      - name: Login to IBM API Connect
+        env:
+          APIC_SERVER: ${{ secrets.APIC_SERVER }}
+          APIC_USER: ${{ secrets.APIC_USER }}
+          APIC_PASS: ${{ secrets.APIC_PASS }}
+          APIC_REALM: ${{ secrets.APIC_REALM }}
+        run: |
+          echo "🔐 Autenticando en IBM API Connect..."
+          apic login \
+            --server "$APIC_SERVER" \
+            --username "$APIC_USER" \
+            --password "$APIC_PASS" \
+            --realm "$APIC_REALM" \
+            --accept-license
+ 
+      - name: Validate and Publish API
+        env:
+          APIC_SERVER: ${{ secrets.APIC_SERVER }}
+          API_PATH: ${{ github.event.inputs.api_path }}
+          ORG_NAME: ${{ github.event.inputs.org_name }}
+          CATALOG_NAME: ${{ github.event.inputs.catalog_name }}
+        run: |
+          echo "📘 Validando API: $API_PATH"
+          apic validate "$API_PATH"
+ 
+          echo "🚀 Publicando API en $CATALOG_NAME / $ORG_NAME"
+          apic publish "$API_PATH" \
+            --server "$APIC_SERVER" \
+            --org "$ORG_NAME" \
+            --catalog "$CATALOG_NAME"
+ 
+          echo "✅ API publicada exitosamente."
