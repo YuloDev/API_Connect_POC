@@ -19,7 +19,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy API Product
+    name: Deploy API
  
     env:
       APIC_SERVER: ${{ secrets.APIC_SERVER }}
@@ -29,7 +29,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
  
-      - name: Deploy API Product
+      - name: Deploy API
         uses: ibm-apiconnect/actions@main
         with:
           manager-host: ${{ env.APIC_SERVER }}
